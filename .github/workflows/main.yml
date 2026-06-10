@@ -5,16 +5,13 @@ on:
       types: [opened, synchronize, reopened]
 
       jobs:
-        claude-review:
+        claude:
             runs-on: ubuntu-latest
                 permissions:
                       pull-requests: write
                             contents: read
                                 steps:
-                                      - name: Checkout code
-                                              uses: actions/checkout@v4
-
-                                                    - name: Claude Code Action Official
-                                                            uses: anthropics/claude-code-action-official@v0.0.31
-                                                                    with:
-                                                                              github_token: ${{ secrets.GITHUB_TOKEN }}
+                                      - uses: actions/checkout@v4
+                                            - uses: anthropics/claude-code-action-official@v0.0.31
+                                                    with:
+                                                              github_token: ${{ secrets.GITHUB_TOKEN }}
