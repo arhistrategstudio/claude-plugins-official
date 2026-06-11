@@ -3,333 +3,668 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Image to Word — OCR & Export</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<title>Prompt Master — Generate Perfect AI Prompts</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
-.container{max-width:1100px;margin:0 auto;padding:24px 16px}
-h1{text-align:center;font-size:1.6rem;margin-bottom:24px;font-weight:700;color:#1a1a2e}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;
+  --text:#e8e8f0;--text2:#9898a8;--accent:#7c5cff;--accent2:#9d7fff;
+  --accent-glow:rgba(124,92,255,.15);--green:#34d399;--red:#f87171;
+  --radius:10px;--font:'Inter',system-ui,-apple-system,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-/* Drop zone */
-.dropzone{border:2px dashed #94a3b8;border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:#fff;margin-bottom:20px}
-.dropzone:hover,.dropzone.dragover{border-color:#3b82f6;background:#eff6ff}
-.dropzone p{color:#64748b;font-size:.95rem;margin-top:8px}
-.dropzone .icon{font-size:2.4rem;color:#94a3b8}
-.dropzone input{display:none}
+/* Header */
+.header{text-align:center;padding:48px 20px 32px;position:relative}
+.header::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(124,92,255,.08),transparent 70%);pointer-events:none}
+.logo{font-size:1.8rem;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.logo span{color:var(--accent)}
+.tagline{color:var(--text2);font-size:.95rem;margin-top:8px;max-width:520px;margin-inline:auto}
 
-/* Progress */
-.progress-wrap{display:none;margin-bottom:20px}
-.progress-bar{height:22px;background:#e2e8f0;border-radius:11px;overflow:hidden;position:relative}
-.progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:11px;transition:width .3s;width:0}
-.progress-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:#1e293b}
+/* Container */
+.container{max-width:860px;margin:0 auto;padding:0 20px 60px}
 
-/* Error */
-.error-msg{display:none;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.9rem}
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:20px}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px}
 
-/* Main grid */
-.main-grid{display:grid;grid-template-columns:1fr 300px;gap:20px;margin-bottom:20px}
-@media(max-width:768px){.main-grid{grid-template-columns:1fr}}
+/* Tool select */
+.select-wrap{position:relative}
+.select-wrap select{width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.95rem;font-family:var(--font);appearance:none;cursor:pointer;outline:none;transition:border-color .2s}
+.select-wrap select:focus{border-color:var(--accent)}
+.select-wrap::after{content:'▾';position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--text2);pointer-events:none;font-size:.9rem}
+optgroup{color:var(--text2);font-style:normal;font-weight:600;font-size:.85rem}
+option{color:var(--text);background:var(--surface2);padding:4px 0}
 
 /* Textarea */
-.text-section{display:none;flex-direction:column}
-.text-section label{font-weight:600;margin-bottom:6px;font-size:.9rem}
-.text-section textarea{width:100%;min-height:260px;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:.95rem;resize:vertical;font-family:inherit;line-height:1.6}
-.text-section textarea:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.idea-input{width:100%;min-height:140px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.95rem;font-family:var(--font);resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}
+.idea-input:focus{border-color:var(--accent)}
+.idea-input::placeholder{color:var(--text2);opacity:.6}
+.char-count{text-align:right;font-size:.75rem;color:var(--text2);margin-top:6px}
 
-/* Settings panel */
-.settings{display:none;background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;flex-direction:column;gap:14px}
-.settings h3{font-size:1rem;margin-bottom:2px;color:#334155}
-.field{display:flex;flex-direction:column;gap:4px}
-.field label{font-size:.8rem;font-weight:600;color:#475569}
-.field select,.field input[type="number"],.field input[type="color"]{width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.85rem;background:#fff}
-.field input[type="color"]{height:34px;padding:2px 4px;cursor:pointer}
-.toggles{display:flex;gap:6px}
-.toggles button{flex:1;padding:6px 0;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .15s}
-.toggles button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
-.align-btns{display:flex;gap:6px}
-.align-btns button{flex:1;padding:6px 0;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:.8rem;transition:all .15s}
-.align-btns button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+/* Generate btn */
+.btn-generate{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#6246ea);color:#fff;border:none;border-radius:var(--radius);font-size:1rem;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .2s;letter-spacing:.01em;position:relative;overflow:hidden}
+.btn-generate:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,92,255,.3)}
+.btn-generate:active{transform:translateY(0)}
+.btn-generate:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-generate .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:8px;vertical-align:middle}
+.btn-generate.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* Preview */
-.preview-section{display:none;flex-direction:column}
-.preview-section h3{font-size:.95rem;font-weight:600;margin-bottom:6px;color:#334155}
-.preview-box{border:1px solid #cbd5e1;border-radius:8px;padding:20px;min-height:160px;background:#fff;white-space:pre-wrap;word-wrap:break-word;overflow-y:auto;max-height:300px}
+/* Output */
+.output-card{display:none}
+.output-card.visible{display:block}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.output-header h3{font-size:.95rem;font-weight:600;color:var(--green)}
 
-/* Export */
-.export-wrap{display:none;text-align:center;margin-top:4px}
-.btn-export{padding:12px 36px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform .1s}
-.btn-export:hover{transform:scale(1.03)}
-.btn-export:active{transform:scale(.98)}
+/* Prompt block */
+.prompt-block{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;white-space:pre-wrap;word-wrap:break-word;font-size:.9rem;line-height:1.7;color:var(--text);max-height:500px;overflow-y:auto}
+.prompt-block::-webkit-scrollbar{width:6px}
+.prompt-block::-webkit-scrollbar-track{background:transparent}
+.prompt-block::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.btn-copy{padding:8px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.btn-copy:hover{border-color:var(--accent);color:var(--accent)}
+.btn-copy.copied{border-color:var(--green);color:var(--green)}
+
+/* Strategy note */
+.strategy-note{font-size:.85rem;color:var(--text2);line-height:1.6;padding:12px 16px;background:var(--accent-glow);border-radius:var(--radius);border:1px solid rgba(124,92,255,.15)}
+.strategy-note .target-badge{display:inline-block;background:var(--accent);color:#fff;padding:2px 10px;border-radius:5px;font-size:.75rem;font-weight:600;margin-right:8px;vertical-align:middle}
+
+/* Tips */
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:24px}
+.tip{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-size:.82rem;color:var(--text2);line-height:1.5}
+.tip strong{color:var(--text);display:block;margin-bottom:4px;font-size:.85rem}
+
+/* Footer */
+.footer{text-align:center;padding:32px 20px;color:var(--text2);font-size:.8rem}
+.footer a{color:var(--accent2);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* Responsive */
+@media(max-width:600px){
+  .header{padding:32px 16px 24px}
+  .logo{font-size:1.4rem}
+  .card{padding:20px}
+  .tips{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
+
+<div class="header">
+  <div class="logo">Prompt <span>Master</span></div>
+  <p class="tagline">Generate optimized, production-ready prompts for any AI tool. No API key needed — everything runs in your browser.</p>
+</div>
+
 <div class="container">
-  <h1>Image to Word</h1>
-
-  <div class="dropzone" id="dropzone">
-    <div class="icon">&#128444;</div>
-    <p><strong>Drop an image here</strong> or click to browse</p>
-    <p style="font-size:.8rem;color:#94a3b8">PNG, JPG, JPEG, WebP, BMP</p>
-    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,.bmp">
-  </div>
-
-  <div class="progress-wrap" id="progressWrap">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div><div class="progress-text" id="progressText">0%</div></div>
-  </div>
-
-  <div class="error-msg" id="errorMsg"></div>
-
-  <div class="main-grid">
-    <div>
-      <div class="text-section" id="textSection">
-        <label for="ocrText">Extracted Text (editable)</label>
-        <textarea id="ocrText" spellcheck="true"></textarea>
-      </div>
-      <div class="preview-section" id="previewSection">
-        <h3>Live Preview</h3>
-        <div class="preview-box" id="previewBox"></div>
-      </div>
-    </div>
-
-    <div class="settings" id="settingsPanel">
-      <h3>Text Settings</h3>
-      <div class="field">
-        <label>Font Family</label>
-        <select id="sFont">
-          <option value="Calibri" selected>Calibri</option>
-          <option value="Arial">Arial</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Verdana">Verdana</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Font Size (pt)</label>
-        <input type="number" id="sSize" value="11" min="6" max="72" step="0.5">
-      </div>
-      <div class="field">
-        <label>Style</label>
-        <div class="toggles">
-          <button id="sBold" onclick="toggle(this)"><b>B</b></button>
-          <button id="sItalic" onclick="toggle(this)"><i>I</i></button>
-          <button id="sUnder" onclick="toggle(this)"><u>U</u></button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Alignment</label>
-        <div class="align-btns">
-          <button class="active" data-align="LEFT" onclick="setAlign(this)">Left</button>
-          <button data-align="CENTER" onclick="setAlign(this)">Center</button>
-          <button data-align="RIGHT" onclick="setAlign(this)">Right</button>
-          <button data-align="JUSTIFIED" onclick="setAlign(this)">Justify</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Line Spacing</label>
-        <select id="sSpacing">
-          <option value="1">Single</option>
-          <option value="1.5" selected>1.5</option>
-          <option value="2">Double</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Text Color</label>
-        <input type="color" id="sColor" value="#000000">
-      </div>
-      <div class="field">
-        <label>Paragraph Spacing After (pt)</label>
-        <input type="number" id="sParaAfter" value="8" min="0" max="72" step="1">
-      </div>
-      <div class="field">
-        <label>OCR Language</label>
-        <select id="sLang">
-          <option value="eng" selected>English</option>
-          <option value="fra">French</option>
-          <option value="deu">German</option>
-          <option value="spa">Spanish</option>
-          <option value="ita">Italian</option>
-          <option value="por">Portuguese</option>
-          <option value="rus">Russian</option>
-          <option value="chi_sim">Chinese (Simplified)</option>
-          <option value="jpn">Japanese</option>
-          <option value="kor">Korean</option>
-          <option value="ara">Arabic</option>
-        </select>
-      </div>
+  <!-- Tool Selection -->
+  <div class="card">
+    <div class="card-title">Target AI Tool</div>
+    <div class="select-wrap">
+      <select id="toolSelect">
+        <option value="auto">Auto-detect from description</option>
+        <optgroup label="Reasoning LLMs">
+          <option value="claude">Claude (claude.ai / API)</option>
+          <option value="chatgpt">ChatGPT / GPT-4o</option>
+          <option value="gemini">Gemini 2.x / 3 Pro</option>
+          <option value="o1">o1 / o3 (reasoning models)</option>
+          <option value="deepseek">DeepSeek-R1</option>
+          <option value="qwen25">Qwen 2.5</option>
+          <option value="qwen3">Qwen3 (thinking mode)</option>
+          <option value="llama">Llama / Mistral / Open-weight</option>
+          <option value="ollama">Ollama (local models)</option>
+        </optgroup>
+        <optgroup label="Coding &amp; Agents">
+          <option value="claude-code">Claude Code</option>
+          <option value="cursor">Cursor / Windsurf</option>
+          <option value="copilot">GitHub Copilot</option>
+          <option value="bolt">Bolt / v0 / Lovable</option>
+          <option value="devin">Devin / SWE-agent</option>
+          <option value="antigravity">Antigravity (Google IDE)</option>
+        </optgroup>
+        <optgroup label="Image AI">
+          <option value="midjourney">Midjourney</option>
+          <option value="dalle">DALL-E 3</option>
+          <option value="stablediffusion">Stable Diffusion</option>
+          <option value="seedream">SeeDream</option>
+          <option value="comfyui">ComfyUI</option>
+        </optgroup>
+        <optgroup label="Video &amp; Voice">
+          <option value="sora">Sora</option>
+          <option value="runway">Runway</option>
+          <option value="kling">Kling</option>
+          <option value="elevenlabs">ElevenLabs / Voice AI</option>
+        </optgroup>
+        <optgroup label="Search &amp; Automation">
+          <option value="perplexity">Perplexity / SearchGPT</option>
+          <option value="zapier">Zapier / Make / n8n</option>
+        </optgroup>
+        <optgroup label="Special Modes">
+          <option value="decompile">Decompile an existing prompt</option>
+        </optgroup>
+      </select>
     </div>
   </div>
 
-  <div class="export-wrap" id="exportWrap">
-    <button class="btn-export" onclick="exportDocx()">Download .docx</button>
+  <!-- Idea Input -->
+  <div class="card">
+    <div class="card-title">Your Idea or Rough Prompt</div>
+    <textarea class="idea-input" id="ideaInput" placeholder="Describe what you want the AI to do. Be as rough or detailed as you like — Prompt Master will optimize it.&#10;&#10;Examples:&#10;• Write me a Midjourney prompt for a cyberpunk city at night&#10;• Claude Code prompt to build a REST API with auth&#10;• Fix this bad prompt: [paste your prompt here]"></textarea>
+    <div class="char-count"><span id="charCount">0</span> characters</div>
+  </div>
+
+  <!-- Generate -->
+  <button class="btn-generate" id="generateBtn" onclick="generate()">
+    <span class="spinner"></span>
+    Generate Prompt
+  </button>
+
+  <!-- Output -->
+  <div class="card output-card" id="outputCard">
+    <div class="output-header">
+      <h3>Generated Prompt</h3>
+      <button class="btn-copy" id="copyBtn" onclick="copyPrompt()">Copy</button>
+    </div>
+    <div class="prompt-block" id="promptOutput"></div>
+    <div class="strategy-note" id="strategyNote"></div>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <div class="tip">
+      <strong>Be specific</strong>
+      "Refactor getUserData() to async/await" beats "help me with my code"
+    </div>
+    <div class="tip">
+      <strong>Name your tool</strong>
+      Different AI tools need different prompt styles — selecting the right one matters
+    </div>
+    <div class="tip">
+      <strong>Include constraints</strong>
+      "React 18, TypeScript, no external libs" prevents the AI from guessing your stack
+    </div>
   </div>
 </div>
 
+<div class="footer">
+  Built on <a href="https://github.com/nidhinjs/prompt-master" target="_blank" rel="noopener">Prompt Master</a> skill by Nidhin Joseph Nelson — MIT License
+</div>
+
 <script>
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const progressWrap = document.getElementById('progressWrap');
-const progressFill = document.getElementById('progressFill');
-const progressText = document.getElementById('progressText');
-const errorMsg = document.getElementById('errorMsg');
-const textSection = document.getElementById('textSection');
-const ocrText = document.getElementById('ocrText');
-const settingsPanel = document.getElementById('settingsPanel');
-const previewSection = document.getElementById('previewSection');
-const previewBox = document.getElementById('previewBox');
-const exportWrap = document.getElementById('exportWrap');
+const ideaInput = document.getElementById('ideaInput');
+const charCount = document.getElementById('charCount');
+const generateBtn = document.getElementById('generateBtn');
+const outputCard = document.getElementById('outputCard');
+const promptOutput = document.getElementById('promptOutput');
+const strategyNote = document.getElementById('strategyNote');
+const copyBtn = document.getElementById('copyBtn');
+const toolSelect = document.getElementById('toolSelect');
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+ideaInput.addEventListener('input', () => {
+  charCount.textContent = ideaInput.value.length;
 });
-fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
 
-const VALID = ['image/png','image/jpeg','image/webp','image/bmp'];
-
-function showError(msg) {
-  errorMsg.textContent = msg;
-  errorMsg.style.display = 'block';
+function copyPrompt() {
+  const text = promptOutput.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.textContent = 'Copied!';
+    copyBtn.classList.add('copied');
+    setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+  });
 }
-function hideError() { errorMsg.style.display = 'none'; }
 
-async function handleFile(file) {
-  hideError();
-  if (!VALID.includes(file.type)) { showError('Unsupported format. Please use PNG, JPG, JPEG, WebP, or BMP.'); return; }
+/* ── Auto-detect tool from user text ── */
+function detectTool(text) {
+  const t = text.toLowerCase();
+  const map = [
+    [/\b(midjourney|mj)\b/,'midjourney'],
+    [/\b(dall[\-\s]?e|dalle)\b/,'dalle'],
+    [/\b(stable\s*diffusion|sd\s*xl|sdxl|sd\b)/,'stablediffusion'],
+    [/\bseedream\b/,'seedream'],
+    [/\bcomfyui\b/,'comfyui'],
+    [/\b(sora)\b/,'sora'],
+    [/\b(runway)\b/,'runway'],
+    [/\b(kling)\b/,'kling'],
+    [/\b(elevenlabs|eleven\s*labs|voice\s*ai|murf)\b/,'elevenlabs'],
+    [/\b(claude\s*code)\b/,'claude-code'],
+    [/\b(cursor|windsurf)\b/,'cursor'],
+    [/\b(copilot|github\s*copilot)\b/,'copilot'],
+    [/\b(bolt|v0|lovable)\b/,'bolt'],
+    [/\b(devin|swe[\-\s]?agent)\b/,'devin'],
+    [/\b(antigravity)\b/,'antigravity'],
+    [/\b(perplexity|searchgpt)\b/,'perplexity'],
+    [/\b(zapier|make\.com|n8n)\b/,'zapier'],
+    [/\b(o1|o3)\b/,'o1'],
+    [/\b(deepseek|r1)\b/,'deepseek'],
+    [/\b(qwen\s*3)/,'qwen3'],
+    [/\b(qwen)/,'qwen25'],
+    [/\b(ollama)\b/,'ollama'],
+    [/\b(llama|mistral|open[\-\s]?weight)\b/,'llama'],
+    [/\b(gemini)\b/,'gemini'],
+    [/\b(chatgpt|gpt[\-\s]?4|gpt[\-\s]?4o|openai)\b/,'chatgpt'],
+    [/\b(claude)\b/,'claude'],
+  ];
+  for (const [re, tool] of map) { if (re.test(t)) return tool; }
+  if (/\b(image|photo|picture|portrait|illustration|render|draw|painting)\b/.test(t)) return 'midjourney';
+  if (/\b(video|film|shot|footage|animation|clip)\b/.test(t)) return 'sora';
+  if (/\b(voice|speech|narrat|audio\s*book)\b/.test(t)) return 'elevenlabs';
+  if (/\b(search|research|find\s*sources|latest\s*news)\b/.test(t)) return 'perplexity';
+  if (/\b(automat|workflow|trigger|zap)\b/.test(t)) return 'zapier';
+  if (/\b(refactor|function|component|bug|code|api|endpoint|database|backend|frontend|deploy|build|scaffold)\b/.test(t)) return 'claude-code';
+  return 'claude';
+}
 
-  progressWrap.style.display = 'block';
-  progressFill.style.width = '0%';
-  progressText.textContent = 'Initializing OCR…';
-  textSection.style.display = 'none';
-  settingsPanel.style.display = 'none';
-  previewSection.style.display = 'none';
-  exportWrap.style.display = 'none';
+const TOOL_NAMES = {
+  'claude':'Claude','chatgpt':'ChatGPT / GPT-4o','gemini':'Gemini','o1':'o1 / o3',
+  'deepseek':'DeepSeek-R1','qwen25':'Qwen 2.5','qwen3':'Qwen3','llama':'Llama / Mistral',
+  'ollama':'Ollama','claude-code':'Claude Code','cursor':'Cursor / Windsurf',
+  'copilot':'GitHub Copilot','bolt':'Bolt / v0 / Lovable','devin':'Devin / SWE-agent',
+  'antigravity':'Antigravity','midjourney':'Midjourney','dalle':'DALL-E 3',
+  'stablediffusion':'Stable Diffusion','seedream':'SeeDream','comfyui':'ComfyUI',
+  'sora':'Sora','runway':'Runway','kling':'Kling','elevenlabs':'ElevenLabs',
+  'perplexity':'Perplexity','zapier':'Zapier / Make','decompile':'Prompt Decompiler'
+};
 
-  const lang = document.getElementById('sLang').value;
+/* ── Prompt generation engine ── */
+function generate() {
+  const idea = ideaInput.value.trim();
+  if (!idea) { ideaInput.focus(); return; }
 
-  try {
-    const { data } = await Tesseract.recognize(file, lang, {
-      logger: m => {
-        if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-          const pct = Math.round(m.progress * 100);
-          progressFill.style.width = pct + '%';
-          progressText.textContent = pct + '%';
-        } else if (m.status) {
-          progressText.textContent = m.status;
-        }
-      }
-    });
+  let tool = toolSelect.value;
+  if (tool === 'auto') tool = detectTool(idea);
 
-    progressWrap.style.display = 'none';
-    const text = (data.text || '').trim();
-    if (!text) { showError('OCR completed but no text was detected. Try a clearer image or different language.'); return; }
+  generateBtn.classList.add('loading');
+  generateBtn.disabled = true;
 
-    ocrText.value = text;
-    textSection.style.display = 'flex';
-    settingsPanel.style.display = 'flex';
-    previewSection.style.display = 'flex';
-    exportWrap.style.display = 'block';
-    updatePreview();
-  } catch (err) {
-    progressWrap.style.display = 'none';
-    showError('OCR failed: ' + (err.message || err));
+  setTimeout(() => {
+    try {
+      const result = buildPrompt(tool, idea);
+      promptOutput.textContent = result.prompt;
+      strategyNote.innerHTML =
+        `<span class="target-badge">🎯 ${esc(TOOL_NAMES[tool] || tool)}</span> ` +
+        `💡 ${esc(result.strategy)}`;
+      outputCard.classList.add('visible');
+      outputCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } finally {
+      generateBtn.classList.remove('loading');
+      generateBtn.disabled = false;
+    }
+  }, 300);
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── Extract structured intent from rough idea ── */
+function extractIntent(idea) {
+  const lines = idea.split('\n').map(l => l.trim()).filter(Boolean);
+  const lower = idea.toLowerCase();
+
+  let task = idea;
+  let constraints = [];
+  let stack = [];
+  let files = [];
+  let outputFormat = '';
+  let subject = idea;
+
+  // extract file paths
+  const filePaths = idea.match(/[`"']?[\w\/\-\.]+\.(js|ts|tsx|jsx|py|rs|go|java|html|css|md|json|yaml|yml|sql|rb|php|vue|svelte)[`"']?/g);
+  if (filePaths) files = filePaths.map(f => f.replace(/[`"']/g,''));
+
+  // extract stack mentions
+  const stackRe = /\b(react|vue|svelte|angular|next\.?js|nuxt|express|fastapi|flask|django|node\.?js|typescript|javascript|python|rust|go|java|ruby|php|supabase|firebase|postgresql|postgres|mongodb|mysql|redis|docker|tailwind|prisma|drizzle)\b/gi;
+  const stackMatches = lower.match(stackRe);
+  if (stackMatches) stack = [...new Set(stackMatches.map(s => s.charAt(0).toUpperCase() + s.slice(1)))];
+
+  // extract explicit constraints
+  const constraintPhrases = idea.match(/(?:do\s*not|don'?t|never|must\s*not|without|no\s+)[^.,\n]+/gi);
+  if (constraintPhrases) constraints = constraintPhrases;
+
+  // detect desired output format
+  if (/\b(json|csv|table|markdown|list|bullet|yaml)\b/i.test(lower)) {
+    outputFormat = lower.match(/\b(json|csv|table|markdown|list|bullet|yaml)\b/i)[1].toUpperCase();
+  }
+
+  return { task, constraints, stack, files, outputFormat, subject, lines };
+}
+
+/* ── Build prompt by tool category ── */
+function buildPrompt(tool, idea) {
+  const intent = extractIntent(idea);
+
+  switch(tool) {
+    case 'claude': return buildClaude(intent);
+    case 'chatgpt': return buildChatGPT(intent);
+    case 'gemini': return buildGemini(intent);
+    case 'o1': return buildO1(intent);
+    case 'deepseek': return buildDeepSeek(intent);
+    case 'qwen25': return buildQwen25(intent);
+    case 'qwen3': return buildQwen3(intent);
+    case 'llama': return buildLlama(intent);
+    case 'ollama': return buildOllama(intent);
+    case 'claude-code': return buildClaudeCode(intent);
+    case 'cursor': return buildCursor(intent);
+    case 'copilot': return buildCopilot(intent);
+    case 'bolt': return buildBolt(intent);
+    case 'devin': return buildDevin(intent);
+    case 'antigravity': return buildAntigravity(intent);
+    case 'midjourney': return buildMidjourney(intent);
+    case 'dalle': return buildDalle(intent);
+    case 'stablediffusion': return buildStableDiffusion(intent);
+    case 'seedream': return buildSeeDream(intent);
+    case 'comfyui': return buildComfyUI(intent);
+    case 'sora': return buildSora(intent);
+    case 'runway': return buildRunway(intent);
+    case 'kling': return buildKling(intent);
+    case 'elevenlabs': return buildElevenLabs(intent);
+    case 'perplexity': return buildPerplexity(intent);
+    case 'zapier': return buildZapier(intent);
+    case 'decompile': return buildDecompile(intent);
+    default: return buildClaude(intent);
   }
 }
 
-function toggle(btn) { btn.classList.toggle('active'); updatePreview(); }
-
-function setAlign(btn) {
-  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  updatePreview();
+/* helper: extract core action from idea */
+function coreAction(idea) {
+  return idea.replace(/\b(please|can you|could you|i want to|i need to|help me|write me a prompt for|generate a prompt for|prompt for)\b/gi, '').replace(/\s{2,}/g,' ').trim();
 }
 
-function getSettings() {
-  const activeAlign = document.querySelector('.align-btns button.active');
-  return {
-    font: document.getElementById('sFont').value,
-    size: parseFloat(document.getElementById('sSize').value) || 11,
-    bold: document.getElementById('sBold').classList.contains('active'),
-    italic: document.getElementById('sItalic').classList.contains('active'),
-    underline: document.getElementById('sUnder').classList.contains('active'),
-    align: activeAlign ? activeAlign.dataset.align : 'LEFT',
-    spacing: parseFloat(document.getElementById('sSpacing').value) || 1.5,
-    color: document.getElementById('sColor').value,
-    paraAfter: parseInt(document.getElementById('sParaAfter').value) || 0,
-  };
+function stackLine(stack) {
+  return stack.length ? `\nStack: ${stack.join(', ')}` : '';
+}
+function constraintBlock(constraints) {
+  if (!constraints.length) return '';
+  return '\n\nConstraints:\n' + constraints.map(c => `- ${c.trim()}`).join('\n');
+}
+function fileScope(files) {
+  if (!files.length) return '';
+  return '\nScope: ' + files.join(', ');
 }
 
-function updatePreview() {
-  const s = getSettings();
-  const cssAlign = { LEFT:'left', CENTER:'center', RIGHT:'right', JUSTIFIED:'justify' }[s.align] || 'left';
-  previewBox.style.fontFamily = s.font;
-  previewBox.style.fontSize = s.size + 'pt';
-  previewBox.style.fontWeight = s.bold ? 'bold' : 'normal';
-  previewBox.style.fontStyle = s.italic ? 'italic' : 'normal';
-  previewBox.style.textDecoration = s.underline ? 'underline' : 'none';
-  previewBox.style.textAlign = cssAlign;
-  previewBox.style.lineHeight = s.spacing;
-  previewBox.style.color = s.color;
-  previewBox.textContent = ocrText.value;
+/* ═══ LLM BUILDERS ═══ */
+
+function buildClaude(intent) {
+  const action = coreAction(intent.task);
+  let p = `<task>\n${action}\n</task>`;
+  if (intent.stack.length) p += `\n\n<context>\nStack: ${intent.stack.join(', ')}\n</context>`;
+  if (intent.constraints.length) p += `\n\n<constraints>\n${intent.constraints.map(c=>'- '+c.trim()).join('\n')}\n</constraints>`;
+  if (intent.outputFormat) p += `\n\n<output_format>\nRespond in ${intent.outputFormat} format.\n</output_format>`;
+  p += '\n\nKeep solutions minimal. Only make changes directly requested. Do not add features, refactor, or improve beyond what was asked.';
+  return { prompt: p, strategy: 'XML-structured prompt for Claude with anti-over-engineering constraint and explicit scope.' };
 }
 
-document.querySelectorAll('#settingsPanel select, #settingsPanel input').forEach(el => {
-  el.addEventListener('input', updatePreview);
-  el.addEventListener('change', updatePreview);
+function buildChatGPT(intent) {
+  const action = coreAction(intent.task);
+  let p = `You are a senior expert in the relevant domain.\n\nTask: ${action}`;
+  if (intent.stack.length) p += `\nStack: ${intent.stack.join(', ')}`;
+  p += '\n\nInstructions:';
+  p += '\n1. Address the task directly — no preamble, no caveats.';
+  p += '\n2. Follow the exact requirements stated above.';
+  if (intent.outputFormat) p += `\n3. Output in ${intent.outputFormat} format.`;
+  if (intent.constraints.length) p += '\n\nConstraints:\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\nSkip preamble. No caveats. Answer directly. Under 500 words unless the task requires more.';
+  return { prompt: p, strategy: 'Strong role assignment, numbered instructions, length cap, and anti-filler directive for GPT-4o.' };
+}
+
+function buildGemini(intent) {
+  const action = coreAction(intent.task);
+  let p = `Task: ${action}`;
+  if (intent.stack.length) p += `\nContext: Using ${intent.stack.join(', ')}`;
+  p += '\n\nRules:';
+  p += '\n- Base your response only on the provided context. Do not extrapolate.';
+  p += '\n- Cite only sources you are certain of. If uncertain, say [uncertain] rather than guessing.';
+  if (intent.outputFormat) p += `\n- Output format: ${intent.outputFormat}`;
+  if (intent.constraints.length) p += '\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  return { prompt: p, strategy: 'Grounding anchors and anti-hallucination rules for Gemini. Format explicitly locked.' };
+}
+
+function buildO1(intent) {
+  const action = coreAction(intent.task);
+  let p = action;
+  if (intent.stack.length) p += `\n\nStack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) p += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  if (intent.outputFormat) p += `\n\nOutput in ${intent.outputFormat} format.`;
+  return { prompt: p, strategy: 'Short clean instructions only — o1/o3 reason internally. No CoT, no XML, no scaffolding.' };
+}
+
+function buildDeepSeek(intent) {
+  const action = coreAction(intent.task);
+  let p = action;
+  if (intent.stack.length) p += `\n\nStack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) p += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\nOutput only the final answer, no reasoning.';
+  return { prompt: p, strategy: 'Reasoning-native model — short goal statement, no CoT. Suppressed <think> output for clean results.' };
+}
+
+function buildQwen25(intent) {
+  const action = coreAction(intent.task);
+  let p = `[System]\nYou are a senior expert in the relevant domain. Respond precisely.\n\n[User]\n${action}`;
+  if (intent.stack.length) p += `\nStack: ${intent.stack.join(', ')}`;
+  if (intent.outputFormat) p += `\n\nOutput format: ${intent.outputFormat}`;
+  if (intent.constraints.length) p += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  return { prompt: p, strategy: 'Chat template format with explicit system role for Qwen 2.5. Tight scope, explicit output format.' };
+}
+
+function buildQwen3(intent) {
+  const action = coreAction(intent.task);
+  let p = action;
+  if (intent.stack.length) p += `\n\nStack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) p += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  if (intent.outputFormat) p += `\n\nOutput in ${intent.outputFormat} format.`;
+  return { prompt: p, strategy: 'Qwen3 in thinking mode — treated like o1. Short clean instructions, no CoT, no scaffolding.' };
+}
+
+function buildLlama(intent) {
+  const action = coreAction(intent.task);
+  let p = `You are an expert assistant.\n\n${action}`;
+  if (intent.stack.length) p += `\nStack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) p += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  if (intent.outputFormat) p += `\n\nRespond in ${intent.outputFormat} format.`;
+  p += '\n\nBe concise. No filler.';
+  return { prompt: p, strategy: 'Simple flat structure for open-weight models. Short prompt, explicit role, no complex nesting.' };
+}
+
+function buildOllama(intent) {
+  const action = coreAction(intent.task);
+  let sys = 'You are an expert assistant. Be concise and precise.';
+  let user = action;
+  if (intent.stack.length) user += `\nStack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) user += '\n\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  if (intent.outputFormat) user += `\n\nRespond in ${intent.outputFormat} format.`;
+  let p = `## System Prompt (set via Modelfile SYSTEM or API "system" parameter)\n${sys}\n\n## User Prompt\n${user}`;
+  return { prompt: p, strategy: 'Ollama-optimized: system prompt separated for Modelfile/API. Short, simple structure for local model coherence.' };
+}
+
+/* ═══ CODING & AGENT BUILDERS ═══ */
+
+function buildClaudeCode(intent) {
+  const action = coreAction(intent.task);
+  let p = `## Objective\n${action}`;
+  if (intent.stack.length) p += `\n\n## Stack\n${intent.stack.join(', ')}`;
+  if (intent.files.length) p += `\n\n## Scope\nOnly modify: ${intent.files.join(', ')}`;
+  p += '\n\n## Allowed Actions\n- Read and edit files inside the project directory\n- Run tests and linters\n- Install packages listed in package.json / requirements.txt only';
+  p += '\n\n## Forbidden Actions\n- Do NOT modify config files (.env, CI configs) unless explicitly stated\n- Do NOT create files not mentioned in the task\n- Do NOT add extra features, abstractions, or refactors beyond what was asked\n- Do NOT push to git or make remote changes';
+  if (intent.constraints.length) p += '\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\n## Stop Conditions\nPause and ask before:\n- Deleting any file\n- Adding any new dependency\n- Making changes outside the stated scope\n- If an error cannot be resolved within 2 attempts';
+  p += '\n\n## Checkpoints\nAfter each step, output: ✅ [what was completed]\nAt the end, list every file created or modified.';
+  return { prompt: p, strategy: 'Agentic template with stop conditions, scope lock, and checkpoint output to prevent runaway loops and scope creep.' };
+}
+
+function buildCursor(intent) {
+  const action = coreAction(intent.task);
+  let p = `## Task\n${action}`;
+  if (intent.files.length) p += `\n\n## Files\nModify only: ${intent.files.join(', ')}`;
+  if (intent.stack.length) p += `\n\n## Stack\n${intent.stack.join(', ')}`;
+  p += '\n\n## Rules';
+  p += '\n- Do NOT modify any files not listed above';
+  p += '\n- Do NOT add new dependencies';
+  if (intent.constraints.length) p += '\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\n## Done When';
+  p += '\n- The described change works correctly';
+  p += '\n- No new lint errors or type errors introduced';
+  p += '\n- Existing tests still pass';
+  return { prompt: p, strategy: 'File-scope template with path anchors and do-not-touch list for IDE AI. Prevents unintended edits.' };
+}
+
+function buildCopilot(intent) {
+  const action = coreAction(intent.task);
+  let p = `/**\n * ${action}`;
+  if (intent.stack.length) p += `\n * Stack: ${intent.stack.join(', ')}`;
+  if (intent.constraints.length) p += '\n * ' + intent.constraints.map(c=>c.trim()).join('\n * ');
+  p += '\n *\n * @returns {TODO} Describe return type\n */';
+  return { prompt: p, strategy: 'Docstring-first format for Copilot autocomplete. Exact contract as a comment so Copilot generates the correct implementation.' };
+}
+
+function buildBolt(intent) {
+  const action = coreAction(intent.task);
+  let p = `## Goal\n${action}`;
+  if (intent.stack.length) p += `\n\n## Stack\n${intent.stack.join(', ')}`;
+  else p += '\n\n## Stack\n[Specify: React/Vue/Svelte, TypeScript or JS, styling approach]';
+  p += '\n\n## Scope';
+  p += '\n- Build only what is described above';
+  p += '\n- Do NOT add authentication, dark mode, or features not explicitly listed';
+  p += '\n- Do NOT add unnecessary boilerplate';
+  if (intent.constraints.length) p += '\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\n## Component Boundaries';
+  p += '\n[List the components and their responsibilities]';
+  return { prompt: p, strategy: 'Stack-locked template for full-stack generators. Anti-bloat constraints prevent unwanted scaffolding.' };
+}
+
+function buildDevin(intent) {
+  const action = coreAction(intent.task);
+  let p = `## Objective\n${action}`;
+  p += '\n\n## Starting State\n[Describe current file structure, installed packages, existing code]';
+  if (intent.stack.length) p += `\n\nStack: ${intent.stack.join(', ')}`;
+  p += '\n\n## Target State\n[Describe exactly what should exist when the task is complete]';
+  p += '\n\n## Allowed Actions\n- Read and edit files inside src/ only\n- Run tests\n- Install packages explicitly listed';
+  p += '\n\n## Forbidden Actions\n- Do NOT deploy or make remote changes\n- Do NOT modify infrastructure, config, or CI files\n- Do NOT delete files without confirmation\n- Do NOT make architecture decisions without asking';
+  if (intent.constraints.length) p += '\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  p += '\n\n## Stop Conditions\n- Stop after 2 failed attempts at any step\n- Stop before any irreversible action (deployment, database changes, external API calls)\n- Stop when two valid approaches exist and ask which to use';
+  return { prompt: p, strategy: 'Autonomous agent template with explicit starting/target state, forbidden actions, and multi-level stop conditions.' };
+}
+
+function buildAntigravity(intent) {
+  const action = coreAction(intent.task);
+  let p = `## Task\n${action}`;
+  if (intent.stack.length) p += `\n\nStack: ${intent.stack.join(', ')}`;
+  p += '\n\n## Deliverable\nProduce a task artifact listing implementation steps before executing.';
+  p += '\n\n## Verification\nAfter building, verify the UI renders correctly at 375px and 1440px using the browser agent.';
+  p += '\n\n## Autonomy Level\nAgent-assisted mode — ask before running destructive terminal commands.';
+  if (intent.constraints.length) p += '\n\n## Constraints\n' + intent.constraints.map(c=>'- '+c.trim()).join('\n');
+  return { prompt: p, strategy: 'Antigravity task-based prompt with artifact request, browser verification, and autonomy level set.' };
+}
+
+/* ═══ IMAGE AI BUILDERS ═══ */
+
+function buildMidjourney(intent) {
+  const raw = coreAction(intent.task);
+  const descriptors = raw
+    .replace(/\b(midjourney|mj|prompt|generate|create|make|write)\b/gi,'')
+    .replace(/\s{2,}/g,' ').trim();
+
+  let p = `${descriptors}, cinematic lighting, ultra detailed, photorealistic --ar 16:9 --v 6 --style raw`;
+  p += '\n\nnegative: blurry, low quality, watermark, cartoon, extra limbs, distortion, text';
+  return { prompt: p, strategy: 'Comma-separated descriptors over prose. Lighting/mood anchored early, aspect ratio and version locked, negative prompt prevents drift.' };
+}
+
+function buildDalle(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(dall[\-\s]?e|dalle|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `Create an image: ${desc}.\n\nForeground: [main subject with details].\nMidground: [supporting elements].\nBackground: [environment and atmosphere].\n\nDo not include text in the image unless explicitly specified. No watermarks.`;
+  return { prompt: p, strategy: 'Prose description with foreground/midground/background separation for DALL-E 3. Text exclusion added.' };
+}
+
+function buildStableDiffusion(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(stable\s*diffusion|sd|sdxl|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `(${desc}:1.2), cinematic lighting, ultra detailed, 8k\n\nNegative prompt: (worst quality:1.4), (low quality:1.4), blurry, watermark, text, extra fingers, mutated hands, deformed, distortion, cartoon, anime`;
+  p += '\n\nRecommended settings: CFG 7-9, Steps 30-40, Sampler: DPM++ 2M Karras';
+  return { prompt: p, strategy: 'Weighted syntax with (word:weight) for SD. Mandatory negative prompt, CFG and steps recommended.' };
+}
+
+function buildSeeDream(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\bseedream\b/gi,'').replace(/\b(prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `Art style: [cinematic / anime / painterly / photorealistic]\n\n${desc}, detailed, atmospheric lighting, rich color palette`;
+  p += '\n\nNegative: blurry, low quality, watermark, distortion, text';
+  return { prompt: p, strategy: 'SeeDream-optimized: art style specified first, mood/atmosphere descriptors emphasized, negative prompt included.' };
+}
+
+function buildComfyUI(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\bcomfyui\b/gi,'').replace(/\b(prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `## Checkpoint: [your checkpoint model name]\n\n## Positive Prompt\n(${desc}:1.2), cinematic lighting, ultra detailed, masterpiece, best quality`;
+  p += '\n\n## Negative Prompt\n(worst quality:1.4), (low quality:1.4), blurry, watermark, text, extra fingers, mutated hands, deformed, distortion';
+  p += '\n\n## Recommended Settings\nCFG: 7 | Steps: 30 | Sampler: DPM++ 2M Karras';
+  return { prompt: p, strategy: 'ComfyUI node-split format: separate positive/negative blocks per checkpoint. Weights and settings included.' };
+}
+
+/* ═══ VIDEO AI BUILDERS ═══ */
+
+function buildSora(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(sora|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `Camera: [static / slow dolly / crane shot / tracking]\nSubject: ${desc}\nDuration: 5 seconds\nMood: [cinematic / dreamlike / documentary / energetic]\nLighting: [natural / neon / golden hour / dramatic shadows]\nCut style: single continuous shot`;
+  return { prompt: p, strategy: 'Film-direction format for Sora. Camera movement is the highest-impact parameter — specified first.' };
+}
+
+function buildRunway(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(runway|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `${desc}\n\nCinematic look, shallow depth of field, smooth camera movement.\nCamera: [dolly forward / orbit / static wide]\nStyle reference: [film director or visual style]\nDuration: 4 seconds\nSubject continuity: maintain consistent appearance across all frames`;
+  return { prompt: p, strategy: 'Runway Gen-3 cinematic language format. Film-style references and subject continuity directive.' };
+}
+
+function buildKling(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(kling|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `Subject: ${desc}\nBody movement: [describe explicit motion — walking, turning, gesturing]\nCamera angle: [eye level / low angle / overhead]\nShot type: [close-up / medium / wide]\nDuration: 5 seconds\nMood: [natural / dramatic / playful]`;
+  return { prompt: p, strategy: 'Kling-optimized: explicit body movement description for realistic human motion, camera angle and shot type specified.' };
+}
+
+/* ═══ VOICE AI ═══ */
+
+function buildElevenLabs(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(elevenlabs|eleven\s*labs|voice\s*ai|murf|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `Text to speak:\n"${desc}"\n\nVoice settings:\n- Emotion: [neutral / warm / excited / serious / sad]\n- Pacing: [slow / moderate / fast]\n- Emphasis: stress key words by CAPITALIZING them in the text\n- Speech rate: [0.8 slower / 1.0 normal / 1.2 faster]\n- Pauses: use "..." for natural pauses`;
+  return { prompt: p, strategy: 'ElevenLabs parameter-driven format. Emotion, pacing, and emphasis markers instead of prose description.' };
+}
+
+/* ═══ SEARCH & AUTOMATION ═══ */
+
+function buildPerplexity(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(perplexity|searchgpt|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let mode = 'search';
+  if (/\b(compare|vs|versus|better)\b/i.test(desc)) mode = 'compare';
+  else if (/\b(analyze|explain|interpret|why)\b/i.test(desc)) mode = 'analyze';
+
+  let p = `Mode: ${mode}\n\n${desc}\n\nRules:\n- Cite the specific source for each claim\n- Report only what the search results contain\n- If results don't answer the question, say so\n- Do not speculate or extrapolate beyond sources`;
+  return { prompt: p, strategy: `Search AI in ${mode} mode. Citation requirements and anti-hallucination rules applied.` };
+}
+
+function buildZapier(intent) {
+  const raw = coreAction(intent.task);
+  const desc = raw.replace(/\b(zapier|make\.com|n8n|prompt|generate|create|make|write)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  let p = `## Workflow\n\n### Step 1: Trigger\n- App: [trigger app name]\n- Event: [trigger event]\n- Auth: assumes [app] is already connected\n\n### Step 2: Action\n- App: [action app name]\n- Action: [what to do]\n- Field mapping:\n  - [field 1]: {{trigger.data.field}}\n  - [field 2]: {{trigger.data.field}}\n\nDescription: ${desc}`;
+  return { prompt: p, strategy: 'Step-by-step workflow template with trigger/action/field mapping. Auth assumptions stated.' };
+}
+
+/* ═══ DECOMPILE MODE ═══ */
+
+function buildDecompile(intent) {
+  let p = `## Prompt Analysis\n\nOriginal prompt:\n"${intent.task}"\n\n## Breakdown\n\n1. **Target tool**: [identify which AI this was written for]\n2. **Intent**: [what the prompt is trying to achieve]\n3. **Effective elements**: [what works well]\n4. **Problems detected**:\n   - [list specific issues: vague verbs, missing format, no constraints, etc.]\n5. **Missing dimensions**: [what critical info is absent]\n\n## Optimized Version\n[Rewritten prompt applying all fixes]\n\n## Changes Made\n[One-line summary of each fix]`;
+  return { prompt: p, strategy: 'Prompt Decompiler mode — breaks down the existing prompt, identifies issues, and rebuilds it with fixes applied.' };
+}
+
+/* ── Keyboard shortcut ── */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    generate();
+  }
 });
-ocrText.addEventListener('input', updatePreview);
-
-function hexToRGB(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return { r, g, b };
-}
-
-function exportDocx() {
-  const s = getSettings();
-  const text = ocrText.value;
-  if (!text.trim()) return;
-
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip } = docx;
-
-  const alignMap = { LEFT: AlignmentType.LEFT, CENTER: AlignmentType.CENTER, RIGHT: AlignmentType.RIGHT, JUSTIFIED: AlignmentType.JUSTIFIED };
-  const spacingLine = Math.round(s.spacing * 240);
-  const rgb = hexToRGB(s.color);
-  const colorHex = s.color.replace('#','');
-
-  const paragraphs = text.split('\n').map(line => {
-    return new Paragraph({
-      alignment: alignMap[s.align] || AlignmentType.LEFT,
-      spacing: { after: s.paraAfter * 20, line: spacingLine },
-      children: [
-        new TextRun({
-          text: line,
-          font: s.font,
-          size: s.size * 2,
-          bold: s.bold,
-          italics: s.italic,
-          underline: s.underline ? { type: 'single' } : undefined,
-          color: colorHex,
-        })
-      ]
-    });
-  });
-
-  const doc = new Document({
-    sections: [{ children: paragraphs }]
-  });
-
-  Packer.toBlob(doc).then(blob => {
-    saveAs(blob, 'extracted-text.docx');
-  });
-}
 </script>
 </body>
 </html>
